@@ -8,7 +8,7 @@ from .lib import (
     install_app,
     remove_from_programs_and_features
 )
-from .installer_gui import InstallerGUI
+from .gui import InstallerGUI
 
 __all__ = [
     'copy_file_admin',
