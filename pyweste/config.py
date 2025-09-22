@@ -1,23 +1,18 @@
-"""
-Configuration classes and exceptions for PyWeste installer.
-"""
-
 from pathlib import Path
 from typing import List, Tuple, Optional, Dict, Any
-
 
 class InstallationError(Exception):
     """Custom exception for installation errors."""
     pass
 
-
 class InstallationConfig:
-    """Complete configuration class for installations."""
+    """Complete configuration class for installations with fluent interface."""
     
     def __init__(self, app_name: str):
         self.app_name = app_name
         self.publisher = ""
         self.description = f"{app_name} Application"
+        self.version = "1.0.0"
         self.install_path = f"C:/Program Files/{app_name}"
         self.source_files: List[Tuple[str, str]] = []
         self.bundle_dir: Optional[str] = None
@@ -32,24 +27,26 @@ class InstallationConfig:
         self.add_to_programs = True
         self.add_to_startup = False
         self.add_to_path = False
+        self.create_uninstaller = True
         
         # File associations
-        self.file_associations: Dict[str, str] = {}  # {extension: description}
+        self.file_associations: Dict[str, str] = {}
         
         # GUI options
         self.show_gui = True
-        self.custom_icon = None
         self.require_admin = False
+        self.silent_install = False
         
         # Advanced options
-        self.exclude_patterns = ['*.pyc', '__pycache__', '.git', '.gitignore', '*.tmp']
-        self.create_uninstaller = True
+        self.exclude_patterns = ['*.pyc', '__pycache__', '.git', '.gitignore', '*.tmp', '.DS_Store']
         self.compress_files = False
         self.verify_signature = False
+        self.backup_existing = False
         
-    # One-line configuration methods (fluent interface)
+    # Fluent interface methods (one-liners)
     def set_publisher(self, publisher: str): self.publisher = publisher; return self
     def set_description(self, description: str): self.description = description; return self
+    def set_version(self, version: str): self.version = version; return self
     def set_install_path(self, path: str): self.install_path = path; return self
     def set_bundle_dir(self, path: str): self.bundle_dir = path; return self
     def set_main_executable(self, path: str): self.main_executable = path; return self
@@ -64,7 +61,8 @@ class InstallationConfig:
     def enable_gui(self, enabled: bool = True): self.show_gui = enabled; return self
     def require_admin_privileges(self, required: bool = True): self.require_admin = required; return self
     def enable_compression(self, enabled: bool = True): self.compress_files = enabled; return self
-    def enable_signature_verification(self, enabled: bool = True): self.verify_signature = enabled; return self
+    def enable_silent_install(self, enabled: bool = True): self.silent_install = enabled; return self
+    def enable_backup(self, enabled: bool = True): self.backup_existing = enabled; return self
 
     def add_source_file(self, source_path: str, dest_path: str):
         """Add a source file to the installation."""
@@ -85,21 +83,21 @@ class InstallationConfig:
         """Validate configuration and return (is_valid, errors)."""
         errors = []
         
-        # Validate app name
         if not self.app_name or not self.app_name.strip():
             errors.append("Application name cannot be empty")
+        elif len(self.app_name) > 50:
+            errors.append("Application name too long (max 50 characters)")
+        elif any(char in self.app_name for char in '<>:"/\\|?*'):
+            errors.append("Application name contains invalid characters")
             
-        # Validate sources
         if not self.source_files and not self.bundle_dir:
             errors.append("Either source_files or bundle_dir must be provided")
         
-        # Validate source files
         if self.source_files:
             for i, (src, dest) in enumerate(self.source_files):
                 if not Path(src).exists():
                     errors.append(f"Source file {i+1} not found: {src}")
         
-        # Validate bundle directory
         if self.bundle_dir:
             bundle_path = Path(self.bundle_dir)
             if not bundle_path.exists():
@@ -107,17 +105,12 @@ class InstallationConfig:
             elif not bundle_path.is_dir():
                 errors.append(f"Bundle path is not a directory: {self.bundle_dir}")
         
-        # Validate install path
-        try:
-            Path(self.install_path).parent.mkdir(parents=True, exist_ok=True)
-        except Exception as e:
-            errors.append(f"Cannot create installation directory: {e}")
+        if len(self.install_path) > 260:
+            errors.append("Installation path too long (max 260 characters)")
         
-        # Validate icon path
         if self.icon_path and not Path(self.icon_path).exists():
             errors.append(f"Icon file not found: {self.icon_path}")
             
-        # Validate main executable
         if self.main_executable and self.bundle_dir:
             exe_path = Path(self.bundle_dir) / self.main_executable
             if not exe_path.exists():
@@ -142,15 +135,16 @@ class InstallationConfig:
         """Create a copy of the configuration."""
         return self.from_dict(self.to_dict())
 
-
-# Quick configuration templates
 class QuickConfig:
-    """Quick configuration templates."""
+    """Quick configuration templates for common scenarios."""
     
     @staticmethod
-    def python_app(app_name: str, bundle_dir: str):
+    def python_app(app_name: str, bundle_dir: str, main_script: str = "main.py"):
         """Configuration for Python applications."""
-        return InstallationConfig(app_name).set_bundle_dir(bundle_dir).set_main_executable("run.bat")
+        return (InstallationConfig(app_name)
+               .set_bundle_dir(bundle_dir)
+               .set_main_executable(f"python.exe {main_script}")
+               .set_description(f"{app_name} - Python Application"))
     
     @staticmethod
     def portable_app(app_name: str, bundle_dir: str):
@@ -158,7 +152,8 @@ class QuickConfig:
         return (InstallationConfig(app_name)
                .set_bundle_dir(bundle_dir)
                .enable_add_to_programs(False)
-               .set_install_path(f"C:/PortableApps/{app_name}"))
+               .set_install_path(f"C:/PortableApps/{app_name}")
+               .set_description(f"{app_name} - Portable Application"))
     
     @staticmethod
     def system_tool(app_name: str, bundle_dir: str):
@@ -166,31 +161,15 @@ class QuickConfig:
         return (InstallationConfig(app_name)
                .set_bundle_dir(bundle_dir)
                .enable_add_to_path(True)
-               .require_admin_privileges(True))
+               .require_admin_privileges(True)
+               .set_description(f"{app_name} - System Tool"))
     
     @staticmethod
-    def game_app(app_name: str, bundle_dir: str):
+    def game_app(app_name: str, bundle_dir: str, executable: str):
         """Configuration for games."""
         return (InstallationConfig(app_name)
                .set_bundle_dir(bundle_dir)
+               .set_main_executable(executable)
                .set_install_path(f"C:/Games/{app_name}")
-               .enable_add_to_programs(True))
-
-
-# Constants
-class Constants:
-    """Constants used throughout the installer."""
-    
-    DEFAULT_INSTALL_PATH = "{program_files}/{app_name}"
-    DESKTOP_PATH = "{user_profile}/Desktop"
-    STARTMENU_PATH = "{appdata}/Microsoft/Windows/Start Menu/Programs"
-    UNINSTALL_REGISTRY_PATH = r"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall"
-    STARTUP_REGISTRY_PATH = r"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run"
-    
-    SUPPORTED_EXECUTABLE_EXTENSIONS = ['.exe', '.bat', '.cmd', '.msi', '.py']
-    SUPPORTED_ICON_EXTENSIONS = ['.ico', '.png', '.jpg', '.jpeg', '.bmp']
-    SUPPORTED_ARCHIVE_EXTENSIONS = ['.zip', '.tar', '.tar.gz', '.7z']
-    
-    MAX_PATH_LENGTH = 260
-    MAX_APP_NAME_LENGTH = 50
-    MIN_DISK_SPACE_MB = 10
+               .enable_add_to_programs(True)
+               .set_description(f"{app_name} - Game"))
