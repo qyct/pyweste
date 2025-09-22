@@ -5,6 +5,7 @@ import win32com.client
 import pythoncom
 import threading
 import tempfile
+from typing import List, Tuple, Optional, Dict, Any
 from .installer import install_app
 from .files import copy_directory
 from .utils import log_info, log_error
