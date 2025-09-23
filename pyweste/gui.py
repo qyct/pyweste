@@ -56,22 +56,26 @@ class InstallerGUI:
                        no_resize=True, no_collapse=True, no_title_bar=True):
             
             with dpg.group(horizontal=True):
-                dpg.add_spacer(width=8)
+                dpg.add_spacer(width=4)
                 with dpg.group():                    
-                    dpg.add_spacer(height=16)
+                    dpg.add_spacer(height=8)
                     with dpg.group(horizontal=True):
                         dpg.add_input_text(tag="install_path", default_value=self.default_install_path, width=300)
                         dpg.add_button(label="...", callback=self.browse_folder, width=30)
                     
-                    dpg.add_spacer(height=16)
+                    dpg.add_spacer(height=8)
                     dpg.add_checkbox(tag="desktop_shortcut", label="Create desktop shortcut", default_value=True)
                     dpg.add_checkbox(tag="startmenu_shortcut", label="Create start menu shortcut", default_value=True)
-                    dpg.add_checkbox(tag="add_remove_programs", label="Add to Add/Remove Programs", default_value=True)
+                    dpg.add_checkbox(tag="add_remove_programs", label="Adds to Add/Remove Programs", default_value=True)
                     
-                    dpg.add_spacer(height=16)
+                    dpg.add_spacer(height=4)
+
+                    dpg.add_text("Ready to install", tag="progress_text")
+
+                    dpg.add_spacer(height=4)
                     
                     with dpg.group(horizontal=True):
-                        # dpg.add_spacer(width=180)
+                        dpg.add_progress_bar(tag="progress_bar", default_value=0.0, width=255, height=25)
                         dpg.add_button(tag="install_button", label="Install", 
                                      callback=self.install_clicked, width=75, height=25)
                         dpg.add_spacer(width=25)
@@ -224,12 +228,11 @@ class AdvancedInstallerGUI:
                     dpg.add_text("Installation Options:")
                     dpg.add_checkbox(tag="desktop_shortcut", label="Create desktop shortcut", default_value=True)
                     dpg.add_checkbox(tag="startmenu_shortcut", label="Create start menu shortcut", default_value=True)
-                    dpg.add_checkbox(tag="add_remove_programs", label="Add to Add/Remove Programs", default_value=True)
+                    dpg.add_checkbox(tag="add_remove_programs", label="Addd to Add/Remove Programs", default_value=True)
                     
                     dpg.add_spacer(height=20)
                     
-                    # Progress group (hidden initially)
-                    with dpg.group(tag="progress_group", show=False):
+                    with dpg.group():
                         dpg.add_text("Ready to install", tag="progress_text")
                         dpg.add_progress_bar(tag="progress_bar", default_value=0.0, width=350)
                         dpg.add_spacer(height=15)
