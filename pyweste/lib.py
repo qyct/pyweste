@@ -1,53 +1,24 @@
 """
-PyWeste core functions with admin privilege support.
+PyWeste core functions for Windows application installation.
 
 Functions:
-- copy: Copy files with admin privileges
-- desktop: Create desktop shortcuts
-- startmenu: Create start menu shortcuts
-- uninstall: Create uninstaller with admin elevation
+- copy_program: Copy files to installation directory
+- desktop_shortcut: Create desktop shortcuts
+- startmenu_shortcut: Create start menu shortcuts
+- uninstall_script: Create uninstaller with admin elevation
 """
 
 import os
-import sys
 import shutil
 import win32com.client
 import pythoncom
 from pathlib import Path
 from typing import List, Tuple, Optional
 
-from .utils import is_admin, request_admin
 
-
-def _copy_file_with_admin(src: str, dst: str) -> bool:
-    """Internal function to copy a file with admin privileges if needed."""
-    if not Path(src).exists():
-        print(f"ERROR: Source file not found: {src}")
-        return False
-    
-    try:
-        Path(dst).parent.mkdir(parents=True, exist_ok=True)
-        
-        if is_admin():
-            shutil.copy2(src, dst)
-            print(f"INFO: Copied: {src} -> {dst}")
-            return True
-        else:
-            try:
-                shutil.copy2(src, dst)
-                print(f"INFO: Copied: {src} -> {dst}")
-                return True
-            except PermissionError:
-                print("INFO: Requesting admin privileges for file copy...")
-                return request_admin(__file__, f'copy "{src}" "{dst}"')
-    except Exception as e:
-        print(f"ERROR: Failed to copy {src} to {dst}: {e}")
-        return False
-
-
-def copy(source_files: List[Tuple[str, str]], install_path: str) -> bool:
+def copy_program(source_files: List[Tuple[str, str]], install_path: str) -> bool:
     """
-    Copy files to installation directory with admin privileges if needed.
+    Copy files to installation directory.
     
     Args:
         source_files: List of tuples (source_path, relative_destination_path)
@@ -61,7 +32,7 @@ def copy(source_files: List[Tuple[str, str]], install_path: str) -> bool:
             ("C:/temp/myapp.exe", "myapp.exe"),
             ("C:/temp/data/config.ini", "config/config.ini")
         ]
-        copy(source_files, "C:/Program Files/MyApp")
+        copy_program(source_files, "C:/Program Files/MyApp")
     """
     if not source_files:
         print("ERROR: No source files provided")
@@ -74,9 +45,15 @@ def copy(source_files: List[Tuple[str, str]], install_path: str) -> bool:
         print(f"INFO: Created installation directory: {install_path}")
         
         for src, rel_dest in source_files:
-            dest = install_path / rel_dest
-            if not _copy_file_with_admin(src, str(dest)):
+            if not Path(src).exists():
+                print(f"ERROR: Source file not found: {src}")
                 return False
+                
+            dest = install_path / rel_dest
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            
+            shutil.copy2(src, dest)
+            print(f"INFO: Copied: {src} -> {dest}")
         
         print("INFO: All files copied successfully")
         return True
@@ -86,7 +63,7 @@ def copy(source_files: List[Tuple[str, str]], install_path: str) -> bool:
         return False
 
 
-def desktop(target_path: str, shortcut_name: str, icon_path: str = None) -> bool:
+def desktop_shortcut(target_path: str, shortcut_name: str, icon_path: str = None) -> bool:
     """
     Create a desktop shortcut.
     
@@ -99,7 +76,7 @@ def desktop(target_path: str, shortcut_name: str, icon_path: str = None) -> bool
         bool: True if shortcut created successfully, False otherwise
         
     Example:
-        desktop("C:/Program Files/MyApp/myapp.exe", "MyApp", "C:/Program Files/MyApp/icon.ico")
+        desktop_shortcut("C:/Program Files/MyApp/myapp.exe", "MyApp", "C:/Program Files/MyApp/icon.ico")
     """
     try:
         pythoncom.CoInitialize()
@@ -130,7 +107,7 @@ def desktop(target_path: str, shortcut_name: str, icon_path: str = None) -> bool
             pass
 
 
-def startmenu(target_path: str, shortcut_name: str, icon_path: str = None, folder: str = None) -> bool:
+def startmenu_shortcut(target_path: str, shortcut_name: str, icon_path: str = None, folder: str = None) -> bool:
     """
     Create a start menu shortcut.
     
@@ -144,7 +121,7 @@ def startmenu(target_path: str, shortcut_name: str, icon_path: str = None, folde
         bool: True if shortcut created successfully, False otherwise
         
     Example:
-        startmenu("C:/Program Files/MyApp/myapp.exe", "MyApp", folder="My Company")
+        startmenu_shortcut("C:/Program Files/MyApp/myapp.exe", "MyApp", folder="My Company")
     """
     try:
         pythoncom.CoInitialize()
@@ -181,7 +158,7 @@ def startmenu(target_path: str, shortcut_name: str, icon_path: str = None, folde
             pass
 
 
-def uninstall(app_name: str, install_path: str) -> bool:
+def uninstall_script(app_name: str, install_path: str) -> bool:
     """
     Create an uninstallation script that requests admin privileges.
     
@@ -193,10 +170,10 @@ def uninstall(app_name: str, install_path: str) -> bool:
         bool: True if uninstaller created successfully, False otherwise
         
     Example:
-        uninstall("MyApp", "C:/Program Files/MyApp")
+        uninstall_script("MyApp", "C:/Program Files/MyApp")
     """
     install_path = Path(install_path)
-    uninstall_script = install_path / "uninstall.bat"
+    uninstall_script_path = install_path / "uninstall.bat"
     
     uninstall_content = f'''@echo off
 :: Check for admin privileges
@@ -240,29 +217,22 @@ pause >nul
 '''
     
     try:
-        with open(uninstall_script, 'w') as f:
+        with open(uninstall_script_path, 'w') as f:
             f.write(uninstall_content)
-        print(f"INFO: Uninstaller created: {uninstall_script}")
+        print(f"INFO: Uninstaller created: {uninstall_script_path}")
         return True
     except Exception as e:
         print(f"ERROR: Failed to create uninstaller: {e}")
         return False
 
 
-# Handle command line arguments for admin elevation
+# If run directly, show usage
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] == "copy":
-        if len(sys.argv) >= 4:
-            src, dst = sys.argv[2], sys.argv[3]
-            _copy_file_with_admin(src, dst)
-        sys.exit(0)
-    
-    # If run directly, show usage
     print("PyWeste - Python Windows Installation Tools")
     print("==========================================")
     print("Available functions:")
-    print("- copy(source_files, install_path)")
-    print("- desktop(target_path, shortcut_name, icon_path=None)")
-    print("- startmenu(target_path, shortcut_name, icon_path=None, folder=None)")
-    print("- uninstall(app_name, install_path)")
-    print("\nImport with: from pyweste import copy, desktop, startmenu, uninstall")
+    print("- copy_program(source_files, install_path)")
+    print("- desktop_shortcut(target_path, shortcut_name, icon_path=None)")
+    print("- startmenu_shortcut(target_path, shortcut_name, icon_path=None, folder=None)")
+    print("- uninstall_script(app_name, install_path)")
+    print("\nImport with: from pyweste import copy_program, desktop_shortcut, startmenu_shortcut, uninstall_script")
