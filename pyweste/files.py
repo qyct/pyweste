@@ -11,7 +11,7 @@ from typing import List, Tuple
 
 def do_copy_files(source_files: List[Tuple[str, str]], install_path: str) -> bool:
     """
-    Copy files to installation directory.
+    Copy files and folders to installation directory.
     
     Args:
         source_files: List of tuples (source_path, relative_destination_path)
@@ -23,7 +23,8 @@ def do_copy_files(source_files: List[Tuple[str, str]], install_path: str) -> boo
     Example:
         source_files = [
             ("C:/temp/myapp.exe", "myapp.exe"),
-            ("C:/temp/data/config.ini", "config/config.ini")
+            ("C:/temp/data/", "data/"),  # Entire folder
+            ("C:/temp/config.ini", "config/config.ini")
         ]
         do_copy_files(source_files, "C:/Program Files/MyApp")
     """
@@ -38,17 +39,41 @@ def do_copy_files(source_files: List[Tuple[str, str]], install_path: str) -> boo
         print(f"INFO: Created installation directory: {install_path}")
         
         for src, rel_dest in source_files:
-            if not Path(src).exists():
-                print(f"ERROR: Source file not found: {src}")
-                return False
-                
-            dest = install_path / rel_dest
-            dest.parent.mkdir(parents=True, exist_ok=True)
+            src_path = Path(src)
             
-            shutil.copy2(src, dest)
-            print(f"INFO: Copied: {src} -> {dest}")
+            if not src_path.exists():
+                print(f"ERROR: Source file/folder not found: {src}")
+                return False
+            
+            dest = install_path / rel_dest
+            
+            if src_path.is_dir():
+                # Handle directory copying
+                if rel_dest.endswith('/') or rel_dest.endswith('\\'):
+                    # Copy contents of source directory to destination
+                    dest = dest.parent / dest.name if dest.name else dest.parent
+                    dest.mkdir(parents=True, exist_ok=True)
+                    
+                    for item in src_path.iterdir():
+                        if item.is_dir():
+                            shutil.copytree(item, dest / item.name, dirs_exist_ok=True)
+                        else:
+                            shutil.copy2(item, dest / item.name)
+                    
+                    print(f"INFO: Copied directory contents: {src} -> {dest}")
+                else:
+                    # Copy entire directory to destination
+                    if dest.exists():
+                        shutil.rmtree(dest)
+                    shutil.copytree(src_path, dest)
+                    print(f"INFO: Copied directory: {src} -> {dest}")
+            else:
+                # Handle file copying
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(src, dest)
+                print(f"INFO: Copied file: {src} -> {dest}")
         
-        print("INFO: All files copied successfully")
+        print("INFO: All files/folders copied successfully")
         return True
         
     except Exception as e:
@@ -79,3 +104,34 @@ def ensure_directory_exists(path: str) -> bool:
     except Exception as e:
         print(f"ERROR: Failed to create directory {path}: {e}")
         return False
+
+
+def validate_source_files(source_files: List[Tuple[str, str]], base_folder: str = None) -> List[Tuple[str, str]]:
+    """
+    Validate and resolve source file paths.
+    
+    Args:
+        source_files: List of (source, dest) tuples
+        base_folder: Optional base folder for relative paths
+        
+    Returns:
+        List of validated (source, dest) tuples with resolved paths
+    """
+    validated_files = []
+    base_path = Path(base_folder) if base_folder else Path.cwd()
+    
+    for src, dest in source_files:
+        src_path = Path(src)
+        
+        # Resolve relative paths
+        if not src_path.is_absolute():
+            src_path = base_path / src_path
+        
+        # Check if source exists
+        if not src_path.exists():
+            print(f"WARNING: Source not found: {src_path}")
+            continue
+        
+        validated_files.append((str(src_path), dest))
+    
+    return validated_files
