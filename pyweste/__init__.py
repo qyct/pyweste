@@ -2,24 +2,22 @@
 PyWeste - Python Windows Installation Tools
 
 Provides core functions for Windows application installation:
-- copy: Copy files with admin privileges
-- desktop: Create desktop shortcuts
-- startmenu: Create start menu shortcuts  
-- uninstall: Create uninstaller with admin elevation
+- copy_program: Copy files to installation directory
+- desktop_shortcut: Create desktop shortcuts
+- startmenu_shortcut: Create start menu shortcuts  
+- uninstall_script: Create uninstaller with admin elevation
 """
 
 from .lib import (
-    copy,
-    desktop,
-    startmenu,
-    uninstall
+    copy_program,
+    desktop_shortcut,
+    startmenu_shortcut,
+    uninstall_script
 )
 
-__version__ = "1.0.0"
-
 __all__ = [
-    "copy",
-    "desktop", 
-    "startmenu",
-    "uninstall"
+    "copy_program",
+    "desktop_shortcut", 
+    "startmenu_shortcut",
+    "uninstall_script"
 ]
