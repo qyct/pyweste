@@ -1,3 +1,5 @@
+from pathlib import Path
+
 def create_uninstaller_script(app_name: str, install_path: str) -> str:
     """
     Create an uninstallation script that requests admin privileges.
