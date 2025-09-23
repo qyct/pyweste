@@ -1,4 +1,18 @@
+"""
+PyWeste main installer module.
+Handles pyproject.toml configuration loading and installer orchestration.
+"""
+
+import os
+import sys
 from pathlib import Path
+from typing import List, Tuple, Dict, Any
+
+import tomllib
+
+from .gui import start_gui_installer
+from .files import validate_source_files
+
 
 def create_uninstaller_script(app_name: str, install_path: str) -> str:
     """
@@ -19,7 +33,7 @@ def create_uninstaller_script(app_name: str, install_path: str) -> str:
 net session >nul 2>&1
 if %errorLevel% neq 0 (
     echo Requesting administrator privileges...
-    powershell -Command "Start-Process cmd -ArgumentList '/c \"%~f0\"' -Verb RunAs"
+    powershell -Command "Start-Process cmd -ArgumentList '/c \\"%~f0\\"' -Verb RunAs"
     exit /b
 )
 
@@ -76,3 +90,183 @@ exit
     except Exception as e:
         print(f"ERROR: Failed to create uninstaller: {e}")
         return None
+
+
+def load_toml_config(toml_path: str) -> Dict[str, Any]:
+    """
+    Load configuration from pyproject.toml file.
+    
+    Args:
+        toml_path: Path to the pyproject.toml configuration file
+        
+    Returns:
+        dict: Configuration dictionary
+    """
+    try:
+        with open(toml_path, 'rb') as f:
+            return tomllib.load(f)
+    except FileNotFoundError:
+        print(f"ERROR: pyproject.toml file not found: {toml_path}")
+        return {}
+    except Exception as e:
+        print(f"ERROR: Failed to load pyproject.toml configuration: {e}")
+        return {}
+
+
+def parse_source_files(config: Dict[str, Any], base_path: str = None) -> List[Tuple[str, str]]:
+    """
+    Parse source files from pyproject.toml configuration.
+    
+    Args:
+        config: pyproject.toml configuration dictionary
+        base_path: Base path for resolving relative source paths
+        
+    Returns:
+        List of (source, destination) tuples
+    """
+    source_files = []
+    
+    # Check for installer-specific files section
+    if 'tool' in config and 'pyweste' in config['tool'] and 'files' in config['tool']['pyweste']:
+        files_config = config['tool']['pyweste']['files']
+        
+        # Handle source_files array format
+        if 'source_files' in files_config:
+            for entry in files_config['source_files']:
+                if isinstance(entry, list) and len(entry) == 2:
+                    source, dest = entry
+                    source_files.append((source, dest))
+                else:
+                    print(f"WARNING: Invalid file entry format: {entry}")
+        
+        # Handle copy dictionary format (alternative)
+        if 'copy' in files_config:
+            for source, dest in files_config['copy'].items():
+                source_files.append((source, dest))
+    
+    # If no specific files configuration found, try to find common files in base_path
+    if not source_files and base_path:
+        base_dir = Path(base_path)
+        common_patterns = [
+            "*.exe", "*.dll", "*.pyd", "*.so",
+            "README*", "LICENSE*", "CHANGELOG*",
+            "config.ini", "settings.json"
+        ]
+        
+        for pattern in common_patterns:
+            for file_path in base_dir.glob(pattern):
+                if file_path.is_file():
+                    source_files.append((str(file_path), file_path.name))
+        
+        # Also look for directories that might contain assets
+        for dir_name in ["data", "assets", "resources", "static"]:
+            dir_path = base_dir / dir_name
+            if dir_path.exists() and dir_path.is_dir():
+                source_files.append((str(dir_path) + "/", f"{dir_name}/"))
+    
+    # Validate and resolve paths if base_path provided
+    if base_path and source_files:
+        source_files = validate_source_files(source_files, base_path)
+    
+    return source_files
+
+
+def installer(toml_path: str) -> bool:
+    """
+    Main installer function that loads pyproject.toml configuration and runs GUI installer.
+    
+    Args:
+        toml_path: Path to the pyproject.toml configuration file
+        
+    Returns:
+        bool: True if installation completed successfully, False otherwise
+        
+    Example:
+        success = installer("bin/pyproject.toml")
+    """
+    print(f"INFO: Loading configuration from: {toml_path}")
+    
+    # Load pyproject.toml configuration
+    config = load_toml_config(toml_path)
+    if not config:
+        return False
+    
+    # Extract project information
+    project_config = config.get('project', {})
+    
+    # Get installer-specific configuration if available
+    pyweste_config = {}
+    if 'tool' in config and 'pyweste' in config['tool']:
+        pyweste_config = config['tool']['pyweste']
+    
+    # Extract app details from project section
+    app_name = project_config.get('name', 'MyApp')
+    
+    # Get publisher from project authors or pyweste config
+    publisher = pyweste_config.get('publisher', 'Unknown')
+    if publisher == 'Unknown' and 'authors' in project_config:
+        authors = project_config['authors']
+        if authors and isinstance(authors[0], dict):
+            publisher = authors[0].get('name', 'Unknown')
+        elif authors and isinstance(authors[0], str):
+            publisher = authors[0]
+    
+    # Get other configuration
+    main_executable = pyweste_config.get('main_executable')
+    icon_path = pyweste_config.get('icon')
+    
+    # Build default install path
+    default_base = pyweste_config.get('default_install_path', 'C:/Program Files')
+    default_install_path = str(Path(default_base) / app_name)
+    
+    # Parse source files
+    base_path = str(Path(toml_path).parent) if toml_path else None
+    source_files = parse_source_files(config, base_path)
+    
+    if not source_files:
+        print("WARNING: No source files specified for installation")
+        print("INFO: Will try to auto-detect files in the same directory")
+    
+    # Resolve icon path relative to toml file
+    if icon_path and base_path and not Path(icon_path).is_absolute():
+        icon_path = str(Path(base_path) / icon_path)
+    
+    print(f"INFO: Starting GUI installer for: {app_name}")
+    print(f"INFO: Publisher: {publisher}")
+    print(f"INFO: Default install path: {default_install_path}")
+    print(f"INFO: Source files count: {len(source_files)}")
+    
+    # Start GUI installer
+    try:
+        return start_gui_installer(
+            app_name=app_name,
+            default_install_path=default_install_path,
+            icon_path=icon_path,
+            source_files=source_files,
+            publisher=publisher,
+            main_executable=main_executable
+        )
+    except Exception as e:
+        print(f"ERROR: Installer failed: {e}")
+        return False
+
+
+def main():
+    """Command line entry point."""
+    if len(sys.argv) < 2:
+        print("Usage: python -m pyweste <pyproject.toml>")
+        sys.exit(1)
+    
+    toml_path = sys.argv[1]
+    success = installer(toml_path)
+    
+    if success:
+        print("INFO: Installation completed successfully!")
+        sys.exit(0)
+    else:
+        print("ERROR: Installation failed!")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
