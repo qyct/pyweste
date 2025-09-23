@@ -48,47 +48,35 @@ class InstallerGUI:
         
         dpg.destroy_context()
     
-    def cancel_clicked(self):
-        """Handle cancel button click."""
-        self.result = None
-        dpg.destroy_context()
-    
     def run(self) -> Optional[Dict[str, Any]]:
         """Run the installer GUI and return user choices."""
         dpg.create_context()
         
-        with dpg.window(tag="main_window", width=420, height=280, 
+        with dpg.window(tag="main_window", width=350, height=250, 
                        no_resize=True, no_collapse=True, no_title_bar=True):
             
             with dpg.group(horizontal=True):
-                dpg.add_spacer(width=15)
-                with dpg.group():
-                    dpg.add_spacer(height=15)
-                    dpg.add_text(f"Install {self.app_name}", color=(255, 255, 255))
-                    dpg.add_separator()
-                    
-                    dpg.add_spacer(height=20)
-                    dpg.add_text("Installation Directory:")
+                dpg.add_spacer(width=8)
+                with dpg.group():                    
+                    dpg.add_spacer(height=16)
                     with dpg.group(horizontal=True):
-                        dpg.add_input_text(tag="install_path", default_value=self.default_install_path, width=240)
-                        dpg.add_button(label="Browse", callback=self.browse_folder, width=70)
+                        dpg.add_input_text(tag="install_path", default_value=self.default_install_path, width=300)
+                        dpg.add_button(label="...", callback=self.browse_folder, width=30)
                     
-                    dpg.add_spacer(height=20)
-                    dpg.add_text("Installation Options:")
+                    dpg.add_spacer(height=16)
                     dpg.add_checkbox(tag="desktop_shortcut", label="Create desktop shortcut", default_value=True)
                     dpg.add_checkbox(tag="startmenu_shortcut", label="Create start menu shortcut", default_value=True)
                     dpg.add_checkbox(tag="add_remove_programs", label="Add to Add/Remove Programs", default_value=True)
                     
-                    dpg.add_spacer(height=30)
+                    dpg.add_spacer(height=16)
                     
                     with dpg.group(horizontal=True):
-                        dpg.add_spacer(width=80)
+                        # dpg.add_spacer(width=180)
                         dpg.add_button(tag="install_button", label="Install", 
-                                     callback=self.install_clicked, width=90, height=35)
+                                     callback=self.install_clicked, width=75, height=25)
                         dpg.add_spacer(width=25)
-                        dpg.add_button(label="Cancel", callback=self.cancel_clicked, width=90, height=35)
         
-        dpg.create_viewport(title=f"{self.app_name} Setup", width=440, height=300, resizable=False)
+        dpg.create_viewport(title=f"Setup", width=400, height=260, resizable=False)
         dpg.setup_dearpygui()
         dpg.show_viewport()
         dpg.set_primary_window("main_window", True)
