@@ -1,3 +1,3 @@
-from .installer import installer
+from .core import init_installer
 
-__all__ = ["installer"]
+__all__ = ["init_installer"]

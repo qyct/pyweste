@@ -1,38 +1,14 @@
-"""
-PyWeste main installer module.
-Handles pyproject.toml configuration loading and installer orchestration.
-"""
-
 import os
 import sys
 from pathlib import Path
 from typing import List, Tuple, Dict, Any
-
-try:
-    import tomllib
-except ImportError:
-    # For Python < 3.11, use tomli
-    try:
-        import tomli as tomllib
-    except ImportError:
-        print("ERROR: tomllib/tomli not available. Please install tomli for Python < 3.11")
-        sys.exit(1)
+import tomllib
 
 from .gui import start_gui_installer
 from .files import validate_source_files
 
 
 def create_uninstaller_script(app_name: str, install_path: str) -> str:
-    """
-    Create an uninstallation script that requests admin privileges.
-    
-    Args:
-        app_name: Name of the application
-        install_path: Installation directory path
-        
-    Returns:
-        str: Path to the created uninstaller script
-    """
     install_path = Path(install_path)
     uninstall_script_path = install_path / "uninstall.bat"
     
@@ -179,35 +155,11 @@ def parse_source_files(config: Dict[str, Any], base_path: str = None) -> List[Tu
     return source_files
 
 
-def installer() -> bool:
-    """
-    Main installer function that automatically detects configuration from Python executable directory.
-    
-    Returns:
-        bool: True if installation completed successfully, False otherwise
-    """
-    # Use Python executable directory as bin directory
+def init_installer():
     bin_directory = os.path.dirname(sys.executable)
-    
-    # Go one step out of bin directory to get the main folder (bundle root)
     bundle_root = os.path.dirname(bin_directory)
     
-    # Look for pyproject.toml in the bin directory
     toml_path = os.path.join(bin_directory, "pyproject.toml")
-    
-    print(f"INFO: Bin directory (Python executable location): {bin_directory}")
-    print(f"INFO: Bundle root directory: {bundle_root}")
-    print(f"INFO: Looking for configuration at: {toml_path}")
-    
-    # Verify that run.bat exists in bundle root
-    run_bat_path = os.path.join(bundle_root, "run.bat")
-    if not os.path.exists(run_bat_path):
-        print(f"ERROR: run.bat not found at: {run_bat_path}")
-        return False
-    
-    print(f"INFO: Found run.bat at: {run_bat_path}")
-    
-    # Load pyproject.toml configuration
     config = load_toml_config(toml_path)
     if not config:
         print("ERROR: Could not load pyproject.toml configuration")
@@ -279,7 +231,7 @@ def installer() -> bool:
     
     # Start GUI installer
     try:
-        return start_gui_installer(
+        start_gui_installer(
             app_name=app_name,
             default_install_path=default_install_path,
             icon_path=icon_path,
@@ -289,23 +241,3 @@ def installer() -> bool:
         )
     except Exception as e:
         print(f"ERROR: Installer failed: {e}")
-        return False
-
-
-def main():
-    """Command line entry point."""
-    # For backwards compatibility, still accept toml path as argument
-    # but prioritize auto-detection from Python executable directory
-    
-    success = installer()
-    
-    if success:
-        print("INFO: Installation completed successfully!")
-        sys.exit(0)
-    else:
-        print("ERROR: Installation failed!")
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
