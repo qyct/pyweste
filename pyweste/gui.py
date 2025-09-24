@@ -151,12 +151,6 @@ class InstallerGUI:
             self.do_install()
     
     def run(self) -> bool:
-        """
-        Run the installer GUI and perform installation.
-        
-        Returns:
-            bool: True if installation completed successfully, False otherwise
-        """
         dpg.create_context()
         
         with dpg.window(tag="main_window", width=450, height=300, 
@@ -165,18 +159,12 @@ class InstallerGUI:
             with dpg.group(horizontal=True):
                 dpg.add_spacer(width=15)
                 with dpg.group():                    
-                    dpg.add_spacer(height=15)
-                    dpg.add_text(f"Install {self.app_name}", color=(255, 255, 255))
-                    dpg.add_separator()
-                    
-                    dpg.add_spacer(height=15)
-                    dpg.add_text("Installation Directory:")
+                    dpg.add_spacer(height=20)
                     with dpg.group(horizontal=True):
                         dpg.add_input_text(tag="install_path", default_value=self.default_install_path, width=300)
                         dpg.add_button(label="Browse", callback=self.browse_folder, width=70)
                     
                     dpg.add_spacer(height=15)
-                    dpg.add_text("Installation Options:")
                     dpg.add_checkbox(tag="desktop_shortcut", label="Create desktop shortcut", default_value=True)
                     dpg.add_checkbox(tag="startmenu_shortcut", label="Create start menu shortcut", default_value=True)
                     dpg.add_checkbox(tag="add_remove_programs", label="Add to Add/Remove Programs", default_value=True)
@@ -184,16 +172,16 @@ class InstallerGUI:
                     dpg.add_spacer(height=15)
                     
                     dpg.add_text("Ready to install", tag="progress_text")
-                    dpg.add_progress_bar(tag="progress_bar", default_value=0.0, width=400)
                     
                     dpg.add_spacer(height=15)
                     
                     with dpg.group(horizontal=True):
-                        dpg.add_spacer(width=150)
+                        # dpg.add_spacer(width=150)
+                        dpg.add_progress_bar(tag="progress_bar", default_value=0.0, width=270, height=25)
                         dpg.add_button(tag="install_button", label="Install", 
-                                     callback=self.install_clicked, width=100, height=35)
+                                     callback=self.install_clicked, width=100, height=25)
         
-        dpg.create_viewport(title=f"{self.app_name} Setup", width=470, height=320, resizable=False)
+        dpg.create_viewport(title="Setup", width=470, height=320, resizable=False)
         
         # Load icon if provided
         if self.icon_path:

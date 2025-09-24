@@ -171,24 +171,30 @@ def parse_source_files(config: Dict[str, Any], base_path: str = None) -> List[Tu
     return source_files
 
 
-def installer(toml_path: str) -> bool:
+def installer() -> bool:
     """
-    Main installer function that loads pyproject.toml configuration and runs GUI installer.
+    Main installer function that automatically detects configuration from Python executable directory.
     
-    Args:
-        toml_path: Path to the pyproject.toml configuration file
-        
     Returns:
         bool: True if installation completed successfully, False otherwise
-        
-    Example:
-        success = installer("bin/pyproject.toml")
     """
-    print(f"INFO: Loading configuration from: {toml_path}")
+    # Use Python executable directory as bin directory
+    bin_directory = os.path.dirname(sys.executable)
+    
+    # Go one step out of bin directory to get the main folder
+    main_directory = os.path.dirname(bin_directory)
+    
+    # Look for pyproject.toml in the bin directory
+    toml_path = os.path.join(bin_directory, "pyproject.toml")
+    
+    print(f"INFO: Bin directory (Python executable location): {bin_directory}")
+    print(f"INFO: Main directory (one level up): {main_directory}")
+    print(f"INFO: Looking for configuration at: {toml_path}")
     
     # Load pyproject.toml configuration
     config = load_toml_config(toml_path)
     if not config:
+        print("ERROR: Could not load pyproject.toml configuration")
         return False
     
     # Extract project information
@@ -213,28 +219,39 @@ def installer(toml_path: str) -> bool:
     
     # Get other configuration
     main_executable = pyweste_config.get('main_executable')
-    icon_path = pyweste_config.get('icon')
+    
+    # Look for icon.ico in the bin directory
+    icon_path = os.path.join(bin_directory, "icon.ico")
+    if not os.path.exists(icon_path):
+        icon_path = pyweste_config.get('icon')
+        if icon_path and not os.path.isabs(icon_path):
+            icon_path = os.path.join(bin_directory, icon_path)
+    
+    # If no icon found, set to None
+    if icon_path and not os.path.exists(icon_path):
+        print(f"WARNING: Icon file not found: {icon_path}")
+        icon_path = None
+    else:
+        print(f"INFO: Using icon: {icon_path}")
     
     # Build default install path
     default_base = pyweste_config.get('default_install_path', 'C:/Program Files')
     default_install_path = str(Path(default_base) / app_name)
     
-    # Parse source files
-    base_path = str(Path(toml_path).parent) if toml_path else None
-    source_files = parse_source_files(config, base_path)
+    # Create source files list - copy the entire main directory maintaining structure
+    source_files = [(main_directory + "/", "")]  # Copy entire directory contents
     
-    if not source_files:
-        print("WARNING: No source files specified for installation")
-        print("INFO: Will try to auto-detect files in the same directory")
-    
-    # Resolve icon path relative to toml file
-    if icon_path and base_path and not Path(icon_path).is_absolute():
-        icon_path = str(Path(base_path) / icon_path)
+    # If main_executable is specified, ensure it includes proper path from main directory
+    if main_executable:
+        # If main_executable is just a filename, assume it's in the bin folder
+        if not os.path.sep in main_executable and not '/' in main_executable:
+            main_executable = f"bin/{main_executable}"
     
     print(f"INFO: Starting GUI installer for: {app_name}")
     print(f"INFO: Publisher: {publisher}")
     print(f"INFO: Default install path: {default_install_path}")
-    print(f"INFO: Source files count: {len(source_files)}")
+    print(f"INFO: Will copy entire directory: {main_directory}")
+    print(f"INFO: Main executable path: {main_executable}")
     
     # Start GUI installer
     try:
@@ -253,12 +270,10 @@ def installer(toml_path: str) -> bool:
 
 def main():
     """Command line entry point."""
-    if len(sys.argv) < 2:
-        print("Usage: python -m pyweste <pyproject.toml>")
-        sys.exit(1)
+    # For backwards compatibility, still accept toml path as argument
+    # but prioritize auto-detection from Python executable directory
     
-    toml_path = sys.argv[1]
-    success = installer(toml_path)
+    success = installer()
     
     if success:
         print("INFO: Installation completed successfully!")
