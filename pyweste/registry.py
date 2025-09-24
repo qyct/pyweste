@@ -90,12 +90,26 @@ def add_registry_entry_hkcu(app_name: str, install_path: str, uninstall_script_p
             winreg.SetValueEx(key, "UninstallString", 0, winreg.REG_SZ, str(uninstall_script_path))
             winreg.SetValueEx(key, "EstimatedSize", 0, winreg.REG_DWORD, size_kb)
             
+            # Set display icon priority:
+            # 1. Use provided icon_path if it exists
+            # 2. Use main_executable if provided 
+            # 3. Use run.bat as fallback
             if icon_path and os.path.exists(icon_path):
                 winreg.SetValueEx(key, "DisplayIcon", 0, winreg.REG_SZ, icon_path)
             elif main_executable:
                 exe_path = Path(install_path) / main_executable
                 if exe_path.exists():
                     winreg.SetValueEx(key, "DisplayIcon", 0, winreg.REG_SZ, str(exe_path))
+                else:
+                    # Fallback to run.bat if executable not found
+                    run_bat_path = Path(install_path) / "run.bat"
+                    if run_bat_path.exists():
+                        winreg.SetValueEx(key, "DisplayIcon", 0, winreg.REG_SZ, str(run_bat_path))
+            else:
+                # Default fallback to run.bat
+                run_bat_path = Path(install_path) / "run.bat"
+                if run_bat_path.exists():
+                    winreg.SetValueEx(key, "DisplayIcon", 0, winreg.REG_SZ, str(run_bat_path))
             
             winreg.SetValueEx(key, "NoModify", 0, winreg.REG_DWORD, 1)
             winreg.SetValueEx(key, "NoRepair", 0, winreg.REG_DWORD, 1)
@@ -124,12 +138,26 @@ def add_registry_entry_hklm(app_name: str, install_path: str, uninstall_script_p
             winreg.SetValueEx(key, "UninstallString", 0, winreg.REG_SZ, str(uninstall_script_path))
             winreg.SetValueEx(key, "EstimatedSize", 0, winreg.REG_DWORD, size_kb)
             
+            # Set display icon priority:
+            # 1. Use provided icon_path if it exists
+            # 2. Use main_executable if provided 
+            # 3. Use run.bat as fallback
             if icon_path and os.path.exists(icon_path):
                 winreg.SetValueEx(key, "DisplayIcon", 0, winreg.REG_SZ, icon_path)
             elif main_executable:
                 exe_path = Path(install_path) / main_executable
                 if exe_path.exists():
                     winreg.SetValueEx(key, "DisplayIcon", 0, winreg.REG_SZ, str(exe_path))
+                else:
+                    # Fallback to run.bat if executable not found
+                    run_bat_path = Path(install_path) / "run.bat"
+                    if run_bat_path.exists():
+                        winreg.SetValueEx(key, "DisplayIcon", 0, winreg.REG_SZ, str(run_bat_path))
+            else:
+                # Default fallback to run.bat
+                run_bat_path = Path(install_path) / "run.bat"
+                if run_bat_path.exists():
+                    winreg.SetValueEx(key, "DisplayIcon", 0, winreg.REG_SZ, str(run_bat_path))
             
             winreg.SetValueEx(key, "NoModify", 0, winreg.REG_DWORD, 1)
             winreg.SetValueEx(key, "NoRepair", 0, winreg.REG_DWORD, 1)

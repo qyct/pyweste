@@ -8,7 +8,15 @@ import sys
 from pathlib import Path
 from typing import List, Tuple, Dict, Any
 
-import tomllib
+try:
+    import tomllib
+except ImportError:
+    # For Python < 3.11, use tomli
+    try:
+        import tomli as tomllib
+    except ImportError:
+        print("ERROR: tomllib/tomli not available. Please install tomli for Python < 3.11")
+        sys.exit(1)
 
 from .gui import start_gui_installer
 from .files import validate_source_files
@@ -181,15 +189,23 @@ def installer() -> bool:
     # Use Python executable directory as bin directory
     bin_directory = os.path.dirname(sys.executable)
     
-    # Go one step out of bin directory to get the main folder
-    main_directory = os.path.dirname(bin_directory)
+    # Go one step out of bin directory to get the main folder (bundle root)
+    bundle_root = os.path.dirname(bin_directory)
     
     # Look for pyproject.toml in the bin directory
     toml_path = os.path.join(bin_directory, "pyproject.toml")
     
     print(f"INFO: Bin directory (Python executable location): {bin_directory}")
-    print(f"INFO: Main directory (one level up): {main_directory}")
+    print(f"INFO: Bundle root directory: {bundle_root}")
     print(f"INFO: Looking for configuration at: {toml_path}")
+    
+    # Verify that run.bat exists in bundle root
+    run_bat_path = os.path.join(bundle_root, "run.bat")
+    if not os.path.exists(run_bat_path):
+        print(f"ERROR: run.bat not found at: {run_bat_path}")
+        return False
+    
+    print(f"INFO: Found run.bat at: {run_bat_path}")
     
     # Load pyproject.toml configuration
     config = load_toml_config(toml_path)
@@ -238,20 +254,28 @@ def installer() -> bool:
     default_base = pyweste_config.get('default_install_path', 'C:/Program Files')
     default_install_path = str(Path(default_base) / app_name)
     
-    # Create source files list - copy the entire main directory maintaining structure
-    source_files = [(main_directory + "/", "")]  # Copy entire directory contents
+    # Create source files list - copy the entire bundle directory maintaining structure
+    # This will copy everything from bundle_root, including run.bat, bin/, and any other folders
+    source_files = [(bundle_root + "/", "")]  # Copy entire bundle directory contents
     
-    # If main_executable is specified, ensure it includes proper path from main directory
+    # NOTE: We don't exclude setup.bat here since the requirement specifically states 
+    # "don't copy the setup.bat file alone" - this means we should copy it as part 
+    # of the bundle but not create shortcuts to it
+    
+    # The shortcuts will always point to run.bat (handled in gui.py)
+    # The main_executable is only used for registry icon purposes
     if main_executable:
-        # If main_executable is just a filename, assume it's in the bin folder
+        # If main_executable is specified, ensure it includes proper path from bundle root
         if not os.path.sep in main_executable and not '/' in main_executable:
+            # If it's just a filename, assume it's in the bin folder
             main_executable = f"bin/{main_executable}"
     
     print(f"INFO: Starting GUI installer for: {app_name}")
     print(f"INFO: Publisher: {publisher}")
     print(f"INFO: Default install path: {default_install_path}")
-    print(f"INFO: Will copy entire directory: {main_directory}")
-    print(f"INFO: Main executable path: {main_executable}")
+    print(f"INFO: Will copy entire bundle directory: {bundle_root}")
+    print(f"INFO: Main executable (for registry): {main_executable}")
+    print(f"INFO: Shortcuts will point to: run.bat")
     
     # Start GUI installer
     try:

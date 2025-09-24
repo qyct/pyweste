@@ -96,15 +96,27 @@ class InstallerGUI:
             current_step += 1
             self.update_progress(current_step / total_steps, "Creating shortcuts...")
             
-            if todo_desktop and self.main_executable:
-                target_path = str(Path(install_path) / self.main_executable)
-                if not do_desktop_shortcut(target_path, self.app_name, self.icon_path):
+            if todo_desktop:
+                # Always point shortcut to run.bat, not to the main executable
+                run_bat_path = str(Path(install_path) / "run.bat")
+                installed_icon_path = str(Path(install_path) / "bin" / "icon.ico")
+                
+                # Use installed icon if it exists, otherwise None
+                icon_for_shortcut = installed_icon_path if Path(installed_icon_path).exists() else None
+                
+                if not do_desktop_shortcut(run_bat_path, self.app_name, icon_for_shortcut):
                     print("WARNING: Failed to create desktop shortcut")
             
             # Step 3: Create start menu shortcut
-            if todo_startmenu and self.main_executable:
-                target_path = str(Path(install_path) / self.main_executable)
-                if not do_startmenu_shortcut(target_path, self.app_name, self.icon_path, self.publisher):
+            if todo_startmenu:
+                # Always point shortcut to run.bat, not to the main executable
+                run_bat_path = str(Path(install_path) / "run.bat")
+                installed_icon_path = str(Path(install_path) / "bin" / "icon.ico")
+                
+                # Use installed icon if it exists, otherwise None
+                icon_for_shortcut = installed_icon_path if Path(installed_icon_path).exists() else None
+                
+                if not do_startmenu_shortcut(run_bat_path, self.app_name, icon_for_shortcut, self.publisher):
                     print("WARNING: Failed to create start menu shortcut")
             
             # Step 4: Add to registry (includes uninstaller creation)
@@ -112,11 +124,16 @@ class InstallerGUI:
             self.update_progress(current_step / total_steps, "Setting up registry...")
             
             if todo_registry:
+                # For registry, use the main executable if available, otherwise use run.bat
+                registry_executable = self.main_executable if self.main_executable else "run.bat"
+                installed_icon_path = str(Path(install_path) / "bin" / "icon.ico")
+                registry_icon = installed_icon_path if Path(installed_icon_path).exists() else None
+                
                 if not add_to_registry(
                     app_name=self.app_name,
                     install_path=install_path,
-                    main_executable=self.main_executable,
-                    icon_path=self.icon_path,
+                    main_executable=registry_executable,
+                    icon_path=registry_icon,
                     publisher=self.publisher
                 ):
                     print("WARNING: Failed to add registry entry")
