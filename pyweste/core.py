@@ -106,7 +106,7 @@ class InstallerGUI:
             return
         
         self.installing = True
-        dpg.configure_item("install_button", enabled=False)
+        dpg.configure_item("install_button", show=False)
         
         install_path = dpg.get_value("install_path")
         todo_desktop = dpg.get_value("desktop_shortcut")
@@ -142,12 +142,12 @@ class InstallerGUI:
             self.install_success = True
             
             # Change button to Close when installation is successful
-            dpg.configure_item("install_button", label="Close", enabled=True)
+            dpg.configure_item("install_button", label="Close", show=True)
             
         except Exception as e:
             print(f"ERROR: Installation failed: {e}")
             self.update_progress(0.0, f"Installation failed: {str(e)}")
-            dpg.configure_item("install_button", label="Install", enabled=True)
+            dpg.configure_item("install_button", label="Install", show=True)
             self.installing = False
     
     def install_clicked(self):
