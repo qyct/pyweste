@@ -1,5 +1,3 @@
-import ctypes
-import sys
 import os
 import win32com.client
 import pythoncom
@@ -7,6 +5,7 @@ from pathlib import Path
 
 
 def browse_for_folder(title: str = "Select folder", default_path: str = None) -> str:
+    """Browse for a folder using Windows dialog."""
     pythoncom.CoInitialize()
     try:
         shell = win32com.client.Dispatch("Shell.Application")
@@ -18,32 +17,45 @@ def browse_for_folder(title: str = "Select folder", default_path: str = None) ->
         pythoncom.CoUninitialize()
 
 
-def validate_app_name(app_name: str) -> bool:
-    """
-    Validate application name for Windows compatibility.
-    
-    Args:
-        app_name: Application name to validate
+def create_shortcut(target_path: str, shortcut_path: str, icon_path: str = None) -> bool:
+    """Create a Windows shortcut."""
+    try:
+        pythoncom.CoInitialize()
         
-    Returns:
-        bool: True if valid, False otherwise
-    """
-    if not app_name or not app_name.strip():
+        shell = win32com.client.Dispatch("WScript.Shell")
+        shortcut = shell.CreateShortCut(shortcut_path)
+        shortcut.TargetPath = target_path
+        shortcut.WorkingDirectory = str(Path(target_path).parent)
+        
+        if icon_path and os.path.exists(icon_path):
+            shortcut.IconLocation = f"{icon_path},0"
+        
+        shortcut.save()
+        print(f"INFO: Shortcut created: {shortcut_path}")
+        return True
+        
+    except Exception as e:
+        print(f"ERROR: Failed to create shortcut: {e}")
         return False
-    
-    # Windows forbidden characters for filenames/folders
-    forbidden_chars = ['<', '>', ':', '"', '|', '?', '*']
-    for char in forbidden_chars:
-        if char in app_name:
-            return False
-    
-    # Reserved names in Windows
-    reserved_names = [
-        'CON', 'PRN', 'AUX', 'NUL', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5',
-        'COM6', 'COM7', 'COM8', 'COM9', 'LPT1', 'LPT2', 'LPT3', 'LPT4',
-        'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9'
-    ]
-    if app_name.upper() in reserved_names:
-        return False
-    
-    return True
+    finally:
+        try:
+            pythoncom.CoUninitialize()
+        except:
+            pass
+
+
+def calculate_directory_size(directory_path: str) -> int:
+    """Calculate the total size of a directory in bytes."""
+    try:
+        total_size = 0
+        for dirpath, dirnames, filenames in os.walk(directory_path):
+            for filename in filenames:
+                file_path = os.path.join(dirpath, filename)
+                try:
+                    if os.path.exists(file_path):
+                        total_size += os.path.getsize(file_path)
+                except (OSError, IOError):
+                    pass
+        return total_size
+    except Exception:
+        return 0
