@@ -9,14 +9,11 @@ from .registry import add_to_registry
 
 class InstallerGUI:
     def __init__(self, app_name: str = "MyApp", default_install_path: str = None, 
-                 icon_path: str = None, source_files: List[Tuple[str, str]] = None,
-                 publisher: str = "Unknown", main_executable: str = None):
+                 icon_path: str = None, source_files: List[Tuple[str, str]] = None):
         self.app_name = app_name
         self.default_install_path = default_install_path or f"C:/Program Files/{app_name}"
         self.icon_path = icon_path
-        self.source_files = source_files or []
-        self.publisher = publisher
-        self.main_executable = main_executable
+        self.source_files = source_files
         self.installing = False
         self.install_success = False
         

@@ -180,7 +180,6 @@ def init_installer():
     try:
         start_gui_installer(
             app_name=app_name,
-            default_install_path=default_install_path,
             icon_path=icon_path,
             source_files=source_files,
             main_executable=main_executable
