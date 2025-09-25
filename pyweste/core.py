@@ -89,7 +89,7 @@ class InstallerGUI:
         
     def browse_folder(self):
         """Browse for installation folder."""
-        folder_path = browse_for_folder("Select installation folder", self.default_install_path)
+        folder_path = browse_for_folder("Select installation folder")
         if folder_path:
             full_path = str(Path(folder_path) / self.app_name)
             dpg.set_value("install_path", full_path)
@@ -201,7 +201,7 @@ class InstallerGUI:
         
         return self.install_success
 
-def _sanitize_app_name(self, name: str) -> str:
+def _sanitize_app_name(name: str) -> str:
     # Trim surrounding whitespace
     name = name.strip()
     # Replace any non-alphanumeric with space

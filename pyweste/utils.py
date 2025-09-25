@@ -4,12 +4,12 @@ import pythoncom
 from pathlib import Path
 
 
-def browse_for_folder(title: str = "Select folder", default_path: str = None) -> str:
+def browse_for_folder(title: str = "Select folder") -> str:
     """Browse for a folder using Windows dialog."""
     pythoncom.CoInitialize()
     try:
         shell = win32com.client.Dispatch("Shell.Application")
-        folder = shell.BrowseForFolder(0, title, 0, default_path or 0)
+        folder = shell.BrowseForFolder(0, title, 0, 0)
         if folder:
             return folder.Self.Path
         return None
