@@ -166,12 +166,12 @@ class InstallerGUI:
             with dpg.group(horizontal=True):
                 dpg.add_spacer(width=15)
                 with dpg.group():                    
-                    dpg.add_spacer(height=20)
+                    dpg.add_spacer(height=25)
                     with dpg.group(horizontal=True):
                         dpg.add_input_text(tag="install_path", default_value=self.default_install_path, width=300)
                         dpg.add_button(label="Browse", callback=self.browse_folder, width=70)
                     
-                    dpg.add_spacer(height=15)
+                    dpg.add_spacer(height=20)
                     dpg.add_checkbox(tag="desktop_shortcut", label="Create desktop shortcut", default_value=True)
                     dpg.add_checkbox(tag="startmenu_shortcut", label="Create start menu shortcut", default_value=True)
                     dpg.add_checkbox(tag="add_remove_programs", label="Add to Add/Remove Programs", default_value=True)

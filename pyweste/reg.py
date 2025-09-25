@@ -16,14 +16,14 @@ def add_registry_entry(app_name: str, install_path: str, uninstall_script_path: 
         with winreg.CreateKey(winreg.HKEY_CURRENT_USER, registry_path) as key:
             winreg.SetValueEx(key, "DisplayName", 0, winreg.REG_SZ, app_name)
             winreg.SetValueEx(key, "InstallLocation", 0, winreg.REG_SZ, str(install_path))
-            winreg.SetValueEx(key, "UninstallString", 0, winreg.REG_SZ, str(uninstall_script_path))
             winreg.SetValueEx(key, "EstimatedSize", 0, winreg.REG_DWORD, size_kb)
             winreg.SetValueEx(key, "NoModify", 0, winreg.REG_DWORD, 1)
             winreg.SetValueEx(key, "NoRepair", 0, winreg.REG_DWORD, 1)
-            
-            if icon_path and os.path.exists(icon_path):
-                winreg.SetValueEx(key, "DisplayIcon", 0, winreg.REG_SZ, icon_path)
-        
+            winreg.SetValueEx(key, "DisplayIcon", 0, winreg.REG_SZ, icon_path)
+
+            uninstall_cmd = f'cmd.exe /c "{uninstall_script_path}"'
+            winreg.SetValueEx(key, "UninstallString", 0, winreg.REG_SZ, uninstall_cmd)
+
         print(f"INFO: Registry entry created for {app_name}")
         return True
         

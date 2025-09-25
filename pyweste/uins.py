@@ -20,6 +20,7 @@ del "%USERPROFILE%\\Desktop\\{app_name}.lnk" 2>nul
 del "%APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\{app_name}.lnk" 2>nul
 
 reg delete "HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{app_name}" /f 2>nul
+reg delete "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{app_name}" /f 2>nul
 
 cd /d "{install_path.parent}"
 rmdir /s /q "{install_path.name}" 2>nul
