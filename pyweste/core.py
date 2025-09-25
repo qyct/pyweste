@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import shutil
 import tomllib
@@ -200,6 +201,16 @@ class InstallerGUI:
         
         return self.install_success
 
+def _sanitize_app_name(self, name: str) -> str:
+    # Trim surrounding whitespace
+    name = name.strip()
+    # Replace any non-alphanumeric with space
+    name = re.sub(r'[^a-zA-Z0-9]', ' ', name)
+    # Collapse multiple spaces
+    name = re.sub(r'\s+', ' ', name)
+    # Strip leading/trailing spaces again after collapsing
+    name = name.strip()
+    return name
 
 def init_installer():
     """Initialize and start the installer."""
@@ -214,6 +225,8 @@ def init_installer():
         return
     
     app_name = config['project']['name']
+    app_name = _sanitize_app_name(app_name)
+
     icon_path = os.path.join(bin_directory, "icon.ico")
     default_install_path = str(Path('C:/Program Files') / app_name)
     source_files = [(bundle_root + "/", "")]  # Copy entire bundle directory contents
