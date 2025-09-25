@@ -172,22 +172,6 @@ def add_registry_entry_hklm(app_name: str, install_path: str, uninstall_script_p
 
 def add_to_registry(app_name: str, install_path: str, main_executable: str = None, 
                    icon_path: str = None, publisher: str = "Unknown") -> bool:
-    """
-    Add application to Windows registry (Add/Remove Programs) and create uninstaller.
-    
-    Args:
-        app_name: Name of the application
-        install_path: Installation directory path
-        main_executable: Optional main executable path
-        icon_path: Optional path to icon file
-        publisher: Application publisher
-        
-    Returns:
-        bool: True if registry entry created successfully, False otherwise
-        
-    Example:
-        add_to_registry("MyApp", "C:/Program Files/MyApp", "myapp.exe", publisher="My Company")
-    """
     # Create uninstaller script first
     uninstall_script_path = create_uninstaller_script(app_name, install_path)
     if not uninstall_script_path:

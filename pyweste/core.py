@@ -161,69 +161,16 @@ def init_installer():
     
     toml_path = os.path.join(bin_directory, "pyproject.toml")
     config = load_toml_config(toml_path)
-    if not config:
-        print("ERROR: Could not load pyproject.toml configuration")
-        return False
-    
-    # Extract project information
-    project_config = config.get('project', {})
-    
-    # Get installer-specific configuration if available
-    pyweste_config = {}
-    if 'tool' in config and 'pyweste' in config['tool']:
-        pyweste_config = config['tool']['pyweste']
-    
-    # Extract app details from project section
-    app_name = project_config.get('name', 'MyApp')
-    
-    # Get publisher from project authors or pyweste config
-    publisher = pyweste_config.get('publisher', 'Unknown')
-    if publisher == 'Unknown' and 'authors' in project_config:
-        authors = project_config['authors']
-        if authors and isinstance(authors[0], dict):
-            publisher = authors[0].get('name', 'Unknown')
-        elif authors and isinstance(authors[0], str):
-            publisher = authors[0]
-    
-    # Get other configuration
-    main_executable = pyweste_config.get('main_executable')
-    
-    # Look for icon.ico in the bin directory
+    app_name = config['project']['name']
+    entry = config['tool']['pywest']['entry']
     icon_path = os.path.join(bin_directory, "icon.ico")
-    if not os.path.exists(icon_path):
-        icon_path = pyweste_config.get('icon')
-        if icon_path and not os.path.isabs(icon_path):
-            icon_path = os.path.join(bin_directory, icon_path)
     
-    # If no icon found, set to None
-    if icon_path and not os.path.exists(icon_path):
-        print(f"WARNING: Icon file not found: {icon_path}")
-        icon_path = None
-    else:
-        print(f"INFO: Using icon: {icon_path}")
-    
-    # Build default install path
-    default_base = pyweste_config.get('default_install_path', 'C:/Program Files')
-    default_install_path = str(Path(default_base) / app_name)
-    
-    # Create source files list - copy the entire bundle directory maintaining structure
-    # This will copy everything from bundle_root, including run.bat, bin/, and any other folders
+    default_install_path = str(Path('C:/Program Files') / app_name)
     source_files = [(bundle_root + "/", "")]  # Copy entire bundle directory contents
     
-    # NOTE: We don't exclude setup.bat here since the requirement specifically states 
-    # "don't copy the setup.bat file alone" - this means we should copy it as part 
-    # of the bundle but not create shortcuts to it
-    
-    # The shortcuts will always point to run.bat (handled in gui.py)
-    # The main_executable is only used for registry icon purposes
-    if main_executable:
-        # If main_executable is specified, ensure it includes proper path from bundle root
-        if not os.path.sep in main_executable and not '/' in main_executable:
-            # If it's just a filename, assume it's in the bin folder
-            main_executable = f"bin/{main_executable}"
+    main_executable = "bin/python.exe"
     
     print(f"INFO: Starting GUI installer for: {app_name}")
-    print(f"INFO: Publisher: {publisher}")
     print(f"INFO: Default install path: {default_install_path}")
     print(f"INFO: Will copy entire bundle directory: {bundle_root}")
     print(f"INFO: Main executable (for registry): {main_executable}")
@@ -236,7 +183,6 @@ def init_installer():
             default_install_path=default_install_path,
             icon_path=icon_path,
             source_files=source_files,
-            publisher=publisher,
             main_executable=main_executable
         )
     except Exception as e:

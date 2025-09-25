@@ -1,8 +1,3 @@
-"""
-PyWeste GUI installer module.
-Handles the installer GUI interface and user interaction with icon support.
-"""
-
 import dearpygui.dearpygui as dpg
 from pathlib import Path
 from typing import Dict, Any, Optional, List, Tuple
@@ -12,32 +7,7 @@ from .shortcuts import do_desktop_shortcut, do_startmenu_shortcut
 from .registry import add_to_registry
 
 
-def load_icon_for_viewport(icon_path: str) -> bool:
-    """
-    Load icon for the DearPyGui viewport.
-    
-    Args:
-        icon_path: Path to icon file (.ico, .png, .jpg supported)
-        
-    Returns:
-        bool: True if icon loaded successfully
-    """
-    if not icon_path or not Path(icon_path).exists():
-        return False
-    
-    try:
-        # DearPyGui supports common image formats for viewport icons
-        dpg.set_viewport_small_icon(icon_path)
-        dpg.set_viewport_large_icon(icon_path)
-        return True
-    except Exception as e:
-        print(f"WARNING: Failed to load icon: {e}")
-        return False
-
-
 class InstallerGUI:
-    """GUI installer class that handles complete installation process."""
-    
     def __init__(self, app_name: str = "MyApp", default_install_path: str = None, 
                  icon_path: str = None, source_files: List[Tuple[str, str]] = None,
                  publisher: str = "Unknown", main_executable: str = None):
@@ -200,9 +170,8 @@ class InstallerGUI:
         
         dpg.create_viewport(title="Setup", width=470, height=320, resizable=False)
         
-        # Load icon if provided
-        if self.icon_path:
-            load_icon_for_viewport(self.icon_path)
+        dpg.set_viewport_small_icon(self.icon_path)
+        dpg.set_viewport_large_icon(self.icon_path)
         
         dpg.setup_dearpygui()
         dpg.show_viewport()
@@ -215,41 +184,17 @@ class InstallerGUI:
 
 def start_gui_installer(app_name: str = "MyApp", default_install_path: str = None, 
                        icon_path: str = None, source_files: List[Tuple[str, str]] = None,
-                       publisher: str = "Unknown", main_executable: str = None) -> bool:
-    """
-    Start GUI installer and perform complete installation.
-    
-    Args:
-        app_name: Name of the application
-        default_install_path: Default installation path
-        icon_path: Path to icon file for window title bar
-        source_files: List of (source, destination) file pairs to copy
-        publisher: Application publisher name
-        main_executable: Main executable file for shortcuts
-        
-    Returns:
-        bool: True if installation completed successfully, False otherwise
-        
-    Example:
-        success = start_gui_installer(
-            "MyApp", 
-            source_files=[("dist/myapp.exe", "myapp.exe")],
-            icon_path="icon.ico",
-            main_executable="myapp.exe"
-        )
-    """
+                       main_executable: str = None) -> bool:
     gui = InstallerGUI(
         app_name=app_name,
         default_install_path=default_install_path,
         icon_path=icon_path,
         source_files=source_files,
-        publisher=publisher,
         main_executable=main_executable
     )
     return gui.run()
 
 
-# Legacy support - keep for backward compatibility but simplified
 class ProgressTracker:
     """Simple progress tracker."""
     
