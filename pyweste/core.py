@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import List, Tuple, Dict, Any
 
 from .utils import browse_for_folder
-from .reg import add_to_registry
+from .reg import setup_entries
 
 
 def load_toml_config(toml_path: str) -> Dict[str, Any]:
@@ -126,7 +126,7 @@ class InstallerGUI:
                 icon_path = str(Path(install_path) / "bin" / "icon.ico")
                 icon_path = icon_path if Path(icon_path).exists() else None
                 
-                add_to_registry(
+                setup_entries(
                     app_name=self.app_name,
                     install_path=install_path,
                     executable=run_bat_path,

@@ -87,7 +87,7 @@ def add_registry_entry(app_name: str, install_path: str, uninstall_script_path: 
         return False
 
 
-def add_to_registry(app_name: str, install_path: str, executable: str, icon_path: str = None,
+def setup_entries(app_name: str, install_path: str, executable: str, icon_path: str = None,
                    create_desktop: bool = False, create_startmenu: bool = False, add_registry: bool = False) -> bool:
     """Add application to Windows registry and create shortcuts."""
     success = True
