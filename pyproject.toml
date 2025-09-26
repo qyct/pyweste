@@ -4,8 +4,11 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pyweste"
-version = "0.0.2"
+version = "0.0.4"
 description = "An Extra / Helper package for PyWest (Main Package)"
+authors = [
+    {name = "qyct"}
+]
 readme = "README.md"
 license = { text = "Apache-2.0" }
 requires-python = ">=3.11"
